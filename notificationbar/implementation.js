@@ -1,10 +1,10 @@
 /*eslint no-fallthrough: ["error", { "commentPattern": "break[\\s\\w]*omitted" }]*/
 
-"use strict";
+'use strict';
 
 var { EventEmitter, EventManager, ExtensionAPI } = ExtensionCommon;
 var { ExtensionError } = ExtensionUtils;
-var { Services } = ChromeUtils.import("resource://gre/modules/Services.jsm");
+var { Services } = ChromeUtils.import('resource://gre/modules/Services.jsm');
 
 class Notification {
   constructor(notificationId, properties, parent) {
@@ -14,12 +14,12 @@ class Notification {
     this.parent = parent;
 
     let iconURL =
-      properties.icon && !properties.icon.includes(":")
+      properties.icon && !properties.icon.includes(':')
         ? parent.extension.baseURI.resolve(properties.icon)
         : null;
 
     let self = this;
-    let buttons = properties.buttons.map(function(button) {
+    let buttons = properties.buttons.map(function (button) {
       return {
         id: button.id,
         label: button.label,
@@ -29,13 +29,13 @@ class Notification {
           // based on the return values later.
           self.parent.emitter
             .emit(
-              "buttonclicked",
+              'buttonclicked',
               self.properties.windowId,
               self.notificationId,
               button.id
             )
-            .then(rv => {
-              let keepOpen = rv.some(value => value?.close === false);
+            .then((rv) => {
+              let keepOpen = rv.some((value) => value?.close === false);
               if (!keepOpen) {
                 self.remove(/* closedByUser */ true);
               }
@@ -48,18 +48,18 @@ class Notification {
       };
     });
 
-    let callback = function(event) {
+    let callback = function (event) {
       // Every dismissed notification will also generate a removed notification
-      if (event === "dismissed") {
+      if (event === 'dismissed') {
         self.parent.emitter.emit(
-          "dismissed",
+          'dismissed',
           self.properties.windowId,
           self.notificationId
         );
       }
-      if (event === "removed") {
+      if (event === 'removed') {
         self.parent.emitter.emit(
-          "closed",
+          'closed',
           self.properties.windowId,
           self.notificationId,
           self.closedByUser
@@ -76,11 +76,11 @@ class Notification {
       buttons,
       callback
     );
-    let whitelist = ["background", "color", "margin", "padding", "font"];
+    let whitelist = ['background', 'color', 'margin', 'padding', 'font'];
 
     if (properties.style) {
-      let sanitizedStyles = Object.keys(properties.style).filter(style => {
-        let parts = style.split("-");
+      let sanitizedStyles = Object.keys(properties.style).filter((style) => {
+        let parts = style.split('-');
         return (
           // check if first part is in whitelist
           parts.length > 0 &&
@@ -103,7 +103,7 @@ class Notification {
       this.parent.context
     ).window;
     switch (this.properties.placement) {
-      case "message":
+      case 'message':
         // below the receipient list in the message preview window
         if (w.gMessageNotificationBar) {
           return w.gMessageNotificationBar.msgNotificationBar;
@@ -111,7 +111,7 @@ class Notification {
       // break omitted
 
       default:
-      case "bottom":
+      case 'bottom':
         // default bottom notification in the mail3:pane
         if (w.specialTabs) {
           return w.specialTabs.msgNotificationBar;
@@ -125,9 +125,9 @@ class Notification {
         if (!w.gExtensionNotificationBottomBox) {
           let statusbar = w.document.querySelector('hbox[class~="statusbar"]');
           w.gExtensionNotificationBottomBox = new w.MozElements.NotificationBox(
-            element => {
-              element.id = "extension-notification-bottom-box";
-              element.setAttribute("notificationside", "bottom");
+            (element) => {
+              element.id = 'extension-notification-bottom-box';
+              element.setAttribute('notificationside', 'bottom');
               if (statusbar) {
                 w.document.documentElement.insertBefore(element, statusbar);
               } else {
@@ -138,15 +138,15 @@ class Notification {
         }
         return w.gExtensionNotificationBottomBox;
 
-      case "top":
+      case 'top':
         if (!w.gExtensionNotificationTopBox) {
           // try to add it before the toolbox, if that fails add it firstmost
-          let toolbox = w.document.querySelector("toolbox");
+          let toolbox = w.document.querySelector('toolbox');
           if (toolbox) {
             w.gExtensionNotificationTopBox = new w.MozElements.NotificationBox(
-              element => {
-                element.id = "extension-notification-top-box";
-                element.setAttribute("notificationside", "top");
+              (element) => {
+                element.id = 'extension-notification-top-box';
+                element.setAttribute('notificationside', 'top');
                 toolbox.parentElement.insertBefore(
                   element,
                   toolbox.nextElementSibling
@@ -155,9 +155,9 @@ class Notification {
             );
           } else {
             w.gExtensionNotificationTopBox = new w.MozElements.NotificationBox(
-              element => {
-                element.id = "extension-notification-top-box";
-                element.setAttribute("notificationside", "top");
+              (element) => {
+                element.id = 'extension-notification-top-box';
+                element.setAttribute('notificationside', 'top');
                 w.document.documentElement.insertBefore(
                   element,
                   w.document.documentElement.firstChild
@@ -193,11 +193,11 @@ var notificationbar = class extends ExtensionAPI {
     this.notificationsMap = new Map();
     this.emitter = new EventEmitter();
     this.nextId = 1;
-    Services.obs.addObserver(this, "domwindowclosed");
+    Services.obs.addObserver(this, 'domwindowclosed');
   }
 
   onShutdown() {
-    Services.obs.removeObserver(this, "domwindowclosed");
+    Services.obs.removeObserver(this, 'domwindowclosed');
     for (let notification of this.notificationsMap.values()) {
       notification.remove(/* closedByUser */ false);
     }
@@ -249,45 +249,45 @@ var notificationbar = class extends ExtensionAPI {
 
         onDismissed: new EventManager({
           context,
-          name: "notificationbar.onDismissed",
-          register: fire => {
+          name: 'notificationbar.onDismissed',
+          register: (fire) => {
             let listener = (event, windowId, notificationId) => {
               fire.async(windowId, notificationId);
             };
 
-            self.emitter.on("dismissed", listener);
+            self.emitter.on('dismissed', listener);
             return () => {
-              self.emitter.off("dismissed", listener);
+              self.emitter.off('dismissed', listener);
             };
           },
         }).api(),
 
         onClosed: new EventManager({
           context,
-          name: "notificationbar.onClosed",
-          register: fire => {
+          name: 'notificationbar.onClosed',
+          register: (fire) => {
             let listener = (event, windowId, notificationId, closedByUser) => {
               fire.async(windowId, notificationId, closedByUser);
             };
 
-            self.emitter.on("closed", listener);
+            self.emitter.on('closed', listener);
             return () => {
-              self.emitter.off("closed", listener);
+              self.emitter.off('closed', listener);
             };
           },
         }).api(),
 
         onButtonClicked: new EventManager({
           context,
-          name: "notificationbar.onButtonClicked",
-          register: fire => {
+          name: 'notificationbar.onButtonClicked',
+          register: (fire) => {
             let listener = (event, windowId, notificationId, buttonId) => {
               return fire.async(windowId, notificationId, buttonId);
             };
 
-            self.emitter.on("buttonclicked", listener);
+            self.emitter.on('buttonclicked', listener);
             return () => {
-              self.emitter.off("buttonclicked", listener);
+              self.emitter.off('buttonclicked', listener);
             };
           },
         }).api(),
